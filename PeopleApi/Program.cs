@@ -1,4 +1,11 @@
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using PeopleApi.Automappers;
+using PeopleApi.DTOS;
+using PeopleApi.Models;
+using PeopleApi.Repository;
 using PeopleApi.Services;
+using PeopleApi.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +18,29 @@ builder.Services.AddKeyedSingleton<IRandomService, RandomServices>("randomSingle
 builder.Services.AddKeyedScoped<IRandomService, RandomServices>("randomScope");
 builder.Services.AddKeyedTransient<IRandomService, RandomServices>("randomTransient");
 
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddKeyedScoped<ICommonServices<BeerDTO, BeerIdDTO, BeerUpdateDTO>, BeerService>("beerService");
 
+//Repository
+builder.Services.AddScoped<IRepository<Beer>, BeerRepository>();
+
+builder.Services.AddHttpClient<IPostService, PostService>(c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["BaseUrlPost"]);
+});
+
+//EntityFramework
+builder.Services.AddDbContext<StoreContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("StoreConnection"));
+});
+
+//Validadores
+builder.Services.AddScoped<IValidator<BeerIdDTO>, BeerInsertValidator>  ();
+builder.Services.AddScoped<IValidator<BeerUpdateDTO>, BeerUpdateValidator> ();
+
+//mapppers
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 
 builder.Services.AddControllers();
